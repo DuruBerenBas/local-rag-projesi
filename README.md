@@ -3,7 +3,7 @@
 ## Proje Hakkında
 Bu proje, yerel (local) bir Büyük Dil Modeli (LLM) kullanarak kullanıcıların PDF dokümanları üzerinden soru sorabilmesini sağlayan bir RAG (Retrieval-Augmented Generation) servisidir. Veriler dışarıya veya buluta çıkmaz, tamamen yerel ortamda işlenir.
 
-## 🛠 Kullanılan Teknolojiler ve Nedenleri
+## Kullanılan Teknolojiler ve Nedenleri
 * **Ollama (gemma3:4b):** Sohbet (LLM) modeli olarak kullanıldı. İnternet gerektirmemesi ve kişisel/kurumsal veri gizliliği sağlaması sebebiyle tercih edildi.
 * **Ollama (nomic-embed-text):** Metinleri vektörlere dönüştürmek (embedding) için kullanıldı. RAG sistemleri için hızlı ve özel optimize edilmiş bir model olması sebebiyle seçildi.
 * **LangChain & FAISS:** PDF işleme, metinleri anlamlı parçalara bölme (chunking) ve hızlı vektör araması (FAISS) yapmak için kullanıldı.
