@@ -1,19 +1,18 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from rag_engine import process_pdf, answer_question
+# 1. DEĞİŞİKLİK: process_pdf yerine process_documents import ediyoruz
+from rag_engine import process_documents, answer_question
 
-print("API Başlatılıyor... PDF okunup hafızaya alınıyor...")
-db = process_pdf("belge.pdf")
+print("API Başlatılıyor... Klasördeki tüm dokümanlar hafızaya alınıyor...")
+# 2. DEĞİŞİKLİK: Tek bir belge yerine artık "dokumanlar" klasörünü okutuyoruz
+db = process_documents("dokumanlar")
 print("Sistem Hazır! Gelen sorular bekleniyor...")
 
 app = FastAPI(title="Duru'nun RAG Motoru")
 
-
 class SoruIstegi(BaseModel):
     soru: str
 
-
-# --- 1. YENİ EKLENEN: Health Endpoint'i ---
 @app.get("/health")
 def health_check():
     """Servisin ayakta olup olmadığını kontrol eden uç nokta."""

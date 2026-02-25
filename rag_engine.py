@@ -1,9 +1,4 @@
-"""
-Yerel (Local) RAG (Retrieval-Augmented Generation) Motoru
-Bu modül PDF belgelerini işler, vektör veritabanına kaydeder ve Ollama LLM
-kullanarak bağlam destekli soru-cevap işlemleri gerçekleştirir.
-"""
-
+import os
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
@@ -12,47 +7,39 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 
-# Yapay Zeka Modeli ve Vektör Gömme (Embedding) Ayarları
 llm = ChatOllama(model="gemma3:4b")
 embeddings = OllamaEmbeddings(model="nomic-embed-text")
 
-def process_pdf(pdf_path: str):
-    """
-    Belirtilen PDF dosyasını okur, metin parçalarına böler ve bir vektör veritabanı oluşturur.
 
-    Args:
-        pdf_path (str): İşlenecek PDF dosyasının dosya yolu.
-
-    Returns:
-        FAISS: Oluşturulan vektör veritabanı nesnesi.
+def process_documents(folder_path: str):
     """
-    print(f"{pdf_path} dosyası yükleniyor ve işleniyor...")
-    loader = PyPDFLoader(pdf_path)
-    docs = loader.load()
+    Belirtilen klasördeki TÜM PDF dosyalarını okur ve tek bir vektör veritabanında birleştirir.
+    """
+    print(f"'{folder_path}' klasöründeki dokümanlar taranıyor...")
+    all_docs = []
+
+    # İŞTE EKSİK OLAN SİHİRLİ DÖNGÜ BURASI:
+    # Klasörün içine girip sadece PDF'leri tek tek buluyoruz
+    for filename in os.listdir(folder_path):
+        if filename.endswith(".pdf"):
+            pdf_path = os.path.join(folder_path, filename)
+            print(f"-> Okunuyor: {filename}")
+            # PyPDFLoader'a artık klasörü değil, bulduğumuz o tekil dosyayı veriyoruz
+            loader = PyPDFLoader(pdf_path)
+            all_docs.extend(loader.load())
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    splits = text_splitter.split_documents(docs)
+    splits = text_splitter.split_documents(all_docs)
 
     vectorstore = FAISS.from_documents(documents=splits, embedding=embeddings)
     return vectorstore
 
+
 def format_docs(docs) -> str:
-    """
-    Bulunan doküman parçalarını tek bir metin formatında birleştirir.
-    """
     return "\n\n".join(doc.page_content for doc in docs)
 
+
 def answer_question(vectorstore, question: str) -> str:
-    """
-    Kullanıcıdan gelen soruyu, vektör veritabanındaki bağlamı kullanarak cevaplar.
-
-    Args:
-        vectorstore (FAISS): Bağlamın çekileceği vektör veritabanı.
-        question (str): Kullanıcının sorduğu soru.
-
-    Returns:
-        str: LLM tarafından üretilen cevap.
-    """
     retriever = vectorstore.as_retriever()
 
     system_prompt = (
@@ -68,10 +55,10 @@ def answer_question(vectorstore, question: str) -> str:
     ])
 
     rag_chain = (
-        {"context": retriever | format_docs, "input": RunnablePassthrough()}
-        | prompt
-        | llm
-        | StrOutputParser()
+            {"context": retriever | format_docs, "input": RunnablePassthrough()}
+            | prompt
+            | llm
+            | StrOutputParser()
     )
 
     return rag_chain.invoke(question)
