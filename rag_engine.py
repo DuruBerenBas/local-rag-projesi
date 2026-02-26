@@ -7,7 +7,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 
-llm = ChatOllama(model="gemma3:4b")
+llm = ChatOllama(model="llama3", temperature=0)
 embeddings = OllamaEmbeddings(model="nomic-embed-text")
 
 
@@ -38,14 +38,20 @@ def process_documents(folder_path: str):
 def format_docs(docs) -> str:
     return "\n\n".join(doc.page_content for doc in docs)
 
-
-def answer_question(vectorstore, question: str) -> str:
-    retriever = vectorstore.as_retriever()
+def answer_question(vectorstore, query):
+    retriever = vectorstore.as_retriever(
+        search_type="mmr",
+        search_kwargs={"k": 6, "fetch_k": 20}
+    )
 
     system_prompt = (
-        "Sen bilgili ve yardımsever bir asistansın. "
-        "Kullanıcının sorusunu cevaplamak için yalnızca aşağıda sağlanan bağlam (context) metnini kullan. "
-        "Cevabı bağlam metninde bulamıyorsan, sadece 'Bu bilgiyi sağlanan belgede bulamadım' de. Kendi kendine bilgi uydurma.\n\n"
+        "Sen şirketin resmi, son derece zeki ve TÜRKÇE DİL KURALLARINA ÜST DÜZEYDE HAKİM bir asistanısın.\n"
+        "Kullanıcının sorusunu SADECE aşağıdaki bağlamı kullanarak yanıtla.\n"
+        "YAZIM KURALLARI EMRİ:\n"
+        "1. Yanıtlarını verirken Türkçedeki ses olaylarına (ünsüz yumuşaması, ses düşmesi vb.) harfiyen uy.\n"
+        "2. Örn: 'Bebekiniz' değil 'Bebeğiniz', 'Kitapı' değil 'Kitabı' yazmalısın.\n"
+        "3. Her zaman profesyonel, nazik ve kurumsal bir dil kullan.\n\n"
+        "4.KESİNLİKLE İNGİLİZCE KELİME VEYA CÜMLE KULLANMA. Yanıtın tamamı %100 Türkçe olmalıdır.\n"
         "Bağlam:\n{context}"
     )
 
@@ -55,10 +61,10 @@ def answer_question(vectorstore, question: str) -> str:
     ])
 
     rag_chain = (
-            {"context": retriever | format_docs, "input": RunnablePassthrough()}
-            | prompt
-            | llm
-            | StrOutputParser()
+        {"context": retriever | format_docs, "input": RunnablePassthrough()}
+        | prompt
+        | llm
+        | StrOutputParser()
     )
 
-    return rag_chain.invoke(question)
+    return rag_chain.invoke(query)
